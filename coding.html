@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finance Tracker Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --bg2:#11182d;
+      --card:rgba(255,255,255,0.08);
+      --card-border:rgba(255,255,255,0.12);
+      --text:#eef2ff;
+      --muted:#9aa4c7;
+      --green:#22c55e;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#8b5cf6;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+      --radius:20px;
+    }
+
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+    }
+
+    body{
+      min-height:100vh;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(96,165,250,.15), transparent 25%),
+        radial-gradient(circle at left, rgba(139,92,246,.12), transparent 25%),
+        linear-gradient(135deg, #090d18, #0f172a 55%, #0a1020);
+      overflow-x:hidden;
+    }
+
+    .bg-blur{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .blob{
+      position:absolute;
+      width:320px;
+      height:320px;
+      border-radius:50%;
+      filter:blur(70px);
+      opacity:.35;
+      animation: float 10s ease-in-out infinite alternate;
+    }
+
+    .blob.one{
+      background:#2563eb;
+      top:5%;
+      right:5%;
+    }
+
+    .blob.two{
+      background:#7c3aed;
+      bottom:10%;
+      left:5%;
+      animation-delay:1.5s;
+    }
+
+    .blob.three{
+      background:#16a34a;
+      top:40%;
+      left:35%;
+      width:220px;
+      height:220px;
+      animation-delay:3s;
+    }
+
+    @keyframes float{
+      from{transform:translateY(0) translateX(0) scale(1);}
+      to{transform:translateY(-25px) translateX(15px) scale(1.08);}
+    }
+
+    .container{
+      position:relative;
+      z-index:1;
+      max-width:1300px;
+      margin:auto;
+      padding:28px 18px 40px;
+    }
+
+    .hero{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:20px;
+      margin-bottom:24px;
+      animation:fadeUp .8s ease;
+    }
+
+    .hero-left h1{
+      font-size:clamp(28px, 4vw, 44px);
+      margin-bottom:8px;
+      letter-spacing:.3px;
+    }
+
+    .hero-left p{
+      color:var(--muted);
+      max-width:700px;
+      line-height:1.6;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      border-radius:999px;
+      color:#dbeafe;
+      backdrop-filter: blur(10px);
+      box-shadow:var(--shadow);
+      font-size:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:20px;
+    }
+
+    .left-col,.right-col{
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--card-border);
+      backdrop-filter: blur(18px);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+      animation:fadeUp .7s ease both;
+    }
+
+    .card h2{
+      font-size:18px;
+      margin-bottom:16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .card small{
+      color:var(--muted);
+      font-weight:500;
+    }
+
+    @keyframes fadeUp{
+      from{
+        opacity:0;
+        transform:translateY(16px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+    }
+
+    .stat{
+      padding:18px;
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.08);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .stat::after{
+      content:"";
+      position:absolute;
+      inset:auto -30px -30px auto;
+      width:120px;
+      height:120px;
+      border-radius:50%;
+      background:rgba(255,255,255,.06);
+      filter:blur(10px);
+    }
+
+    .stat .label{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:10px;
+    }
+
+    .stat .value{
+      font-size:26px;
+      font-weight:700;
+      letter-spacing:.3px;
+    }
+
+    .saldo .value{color:#f8fafc;}
+    .masuk .value{color:var(--green);}
+    .keluar .value{color:var(--red);}
+
+    form{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:14px;
+    }
+
+    .full{grid-column:1/-1;}
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    label{
+      font-size:13px;
+      color:#d8def7;
+      font-weight:600;
+    }
+
+    input, select, textarea{
+      width:100%;
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px;
+      padding:13px 14px;
+      outline:none;
+      transition:.25s ease;
+      font-size:14px;
+    }
+
+    input:focus, select:focus, textarea:focus{
+      border-color:rgba(96,165,250,.7);
+      box-shadow:0 0 0 4px rgba(96,165,250,.12);
+      transform:translateY(-1px);
+    }
+
+    textarea{
+      min-height:90px;
+      resize:vertical;
+    }
+
+    .btn-row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+
+    button{
+      border:none;
+      outline:none;
+      cursor:pointer;
+      border-radius:14px;
+      padding:13px 18px;
+      font-weight:700;
+      transition:.25s ease;
+    }
+
+    .btn-primary{
+      background:linear-gradient(135deg, #2563eb, #7c3aed);
+      color:white;
+      box-shadow:0 12px 30px rgba(59,130,246,.25);
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-2px) scale(1.01);
+    }
+
+    .btn-ghost{
+      background:rgba(255,255,255,.07);
+      color:#e5e7eb;
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .btn-ghost:hover{
+      background:rgba(255,255,255,.1);
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:14px;
+    }
+
+    .toolbar input, .toolbar select{
+      max-width:220px;
+    }
+
+    .summary-line{
+      margin-top:10px;
+      color:var(--muted);
+      line-height:1.7;
+      font-size:14px;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:760px;
+      background:rgba(255,255,255,.03);
+    }
+
+    th, td{
+      padding:14px 12px;
+      text-align:left;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font-size:14px;
+    }
+
+    th{
+      color:#cdd6f4;
+      background:rgba(255,255,255,.04);
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+
+    tr{
+      transition:.2s ease;
+    }
+
+    tbody tr:hover{
+      background:rgba(255,255,255,.05);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:92px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    .pill.masuk{
+      background:rgba(34,197,94,.15);
+      color:#86efac;
+      border:1px solid rgba(34,197,94,.25);
+    }
+
+    .pill.keluar{
+      background:rgba(239,68,68,.14);
+      color:#fca5a5;
+      border:1px solid rgba(239,68,68,.25);
+    }
+
+    .money.in{color:#86efac; font-weight:700;}
+    .money.out{color:#fca5a5; font-weight:700;}
+
+    .action-btn{
+      padding:8px 12px;
+      border-radius:10px;
+      font-size:12px;
+      background:rgba(239,68,68,.12);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.18);
+    }
+
+    .analysis-box{
+      display:grid;
+      gap:12px;
+    }
+
+    .analysis-item{
+      padding:14px 16px;
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      line-height:1.6;
+    }
+
+    .analysis-item strong{
+      color:#fff;
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:26px 12px;
+      border:1px dashed rgba(255,255,255,.12);
+      border-radius:16px;
+      margin-top:6px;
+    }
+
+    canvas{
+      max-height:320px;
+    }
+
+    .footer-note{
+      text-align:center;
+      color:var(--muted);
+      margin-top:18px;
+      font-size:13px;
+    }
+
+    @media (max-width: 1050px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 720px){
+      .stats{
+        grid-template-columns:1fr;
+      }
+
+      form{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-blur">
+    <div class="blob one"></div>
+    <div class="blob two"></div>
+    <div class="blob three"></div>
+  </div>
+
+  <div class="container">
+    <section class="hero">
+      <div class="hero-left">
+        <div class="badge">💸 Finance Tracker Pro • Web pencatatan keuangan harian</div>
+        <h1>Catat duit masuk & keluar tanpa ribet</h1>
+        <p>
+          Website sederhana tapi tetap profesional buat mencatat transaksi harian,
+          lihat saldo, analisis pengeluaran, dan ngerti pola keuangan lu.
+        </p>
+      </div>
+    </section>
+
+    <div class="grid">
+      <div class="left-col">
+        <div class="card">
+          <h2>
+            Ringkasan Keuangan
+            <small>Realtime dari transaksi lu</small>
+          </h2>
+
+          <div class="stats">
+            <div class="stat saldo">
+              <div class="label">Saldo Saat Ini</div>
+              <div class="value" id="saldoValue">Rp 0</div>
+            </div>
+            <div class="stat masuk">
+              <div class="label">Total Uang Masuk</div>
+              <div class="value" id="masukValue">Rp 0</div>
+            </div>
+            <div class="stat keluar">
+              <div class="label">Total Uang Keluar</div>
+              <div class="value" id="keluarValue">Rp 0</div>
+            </div>
+          </div>
+
+          <div class="summary-line" id="summaryLine">
+            Belum ada data transaksi.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>
+            Tambah Transaksi
+            <small>Masukkan pemasukan atau pengeluaran</small>
+          </h2>
+
+          <form id="transactionForm">
+            <div class="field">
+              <label for="type">Jenis Transaksi</label>
+              <select id="type" required>
+                <option value="masuk">Uang Masuk</option>
+                <option value="keluar">Uang Keluar</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="amount">Nominal</label>
+              <input type="number" id="amount" placeholder="Contoh: 50000" required min="1" />
+            </div>
+
+            <div class="field">
+              <label for="category">Kategori</label>
+              <select id="category" required>
+                <option value="">Pilih kategori</option>
+                <option>Gaji</option>
+                <option>Bonus</option>
+                <option>Freelance</option>
+                <option>Makan</option>
+                <option>Jajan</option>
+                <option>Bensin</option>
+                <option>Transport</option>
+                <option>Belanja</option>
+                <option>Tagihan</option>
+                <option>Hiburan</option>
+                <option>Tabungan</option>
+                <option>Keluarga</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="date">Tanggal</label>
+              <input type="date" id="date" required />
+            </div>
+
+            <div class="field full">
+              <label for="note">Keterangan</label>
+              <textarea id="note" placeholder="Contoh: beli bensin, gaji mingguan, traktir teman, dll"></textarea>
+            </div>
+
+            <div class="btn-row full">
+              <button class="btn-primary" type="submit">+ Simpan Transaksi</button>
+              <button class="btn-ghost" type="button" id="resetFormBtn">Reset Form</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>
+            Riwayat Transaksi
+            <small>Bisa difilter per hari</small>
+          </h2>
+
+          <div class="toolbar">
+            <input type="date" id="filterDate" />
+            <select id="filterType">
+              <option value="all">Semua Jenis</option>
+              <option value="masuk">Uang Masuk</option>
+              <option value="keluar">Uang Keluar</option>
+            </select>
+            <button class="btn-ghost" id="clearFilterBtn">Reset Filter</button>
+            <button class="btn-ghost" id="clearAllBtn">Hapus Semua Data</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Jenis</th>
+                  <th>Kategori</th>
+                  <th>Keterangan</th>
+                  <th>Nominal</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="transactionTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="empty" id="emptyState">
+            Belum ada transaksi. Tambahin dulu biar dashboard hidup.
+          </div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="card">
+          <h2>
+            Grafik Pengeluaran per Kategori
+            <small>Biar kelihatan bocor di mana</small>
+          </h2>
+          <canvas id="expenseChart"></canvas>
+        </div>
+
+        <div class="card">
+          <h2>
+            Analisis Keuangan
+            <small>Insight sederhana dari data lu</small>
+          </h2>
+
+          <div class="analysis-box" id="analysisBox">
+            <div class="analysis-item">
+              Belum ada data buat dianalisis.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Dibuat buat kebutuhan catat keuangan harian • Data tersimpan di browser (localStorage)
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "finance_tracker_transactions_v1";
+
+    const form = document.getElementById("transactionForm");
+    const typeInput = document.getElementById("type");
+    const amountInput = document.getElementById("amount");
+    const categoryInput = document.getElementById("category");
+    const dateInput = document.getElementById("date");
+    const noteInput = document.getElementById("note");
+
+    const saldoValue = document.getElementById("saldoValue");
+    const masukValue = document.getElementById("masukValue");
+    const keluarValue = document.getElementById("keluarValue");
+    const summaryLine = document.getElementById("summaryLine");
+
+    const tableBody = document.getElementById("transactionTableBody");
+    const emptyState = document.getElementById("emptyState");
+
+    const filterDate = document.getElementById("filterDate");
+    const filterType = document.getElementById("filterType");
+
+    const clearFilterBtn = document.getElementById("clearFilterBtn");
+    const clearAllBtn = document.getElementById("clearAllBtn");
+    const resetFormBtn = document.getElementById("resetFormBtn");
+
+    const analysisBox = document.getElementById("analysisBox");
+
+    let expenseChart;
+    let transactions = loadTransactions();
+
+    // set default tanggal hari ini
+    dateInput.value = new Date().toISOString().split("T")[0];
+
+    function loadTransactions(){
+      try{
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      }catch{
+        return [];
+      }
+    }
+
+    function saveTransactions(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    }
+
+    function formatRupiah(num){
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0
+      }).format(num || 0);
+    }
+
+    function formatDate(dateStr){
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      return d.toLocaleDateString("id-ID", {
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      });
+    }
+
+    function addTransaction(e){
+      e.preventDefault();
+
+      const type = typeInput.value;
+      const amount = Number(amountInput.value);
+      const category = categoryInput.value.trim();
+      const date = dateInput.value;
+      const note = noteInput.value.trim();
+
+      if(!type || !amount || amount <= 0 || !category || !date){
+        alert("Isi data transaksi dulu yang lengkap ya bro.");
+        return;
+      }
+
+      const transaction = {
+        id: Date.now(),
+        type,
+        amount,
+        category,
+        date,
+        note
+      };
+
+      transactions.unshift(transaction);
+      saveTransactions();
+      form.reset();
+      dateInput.value = new Date().toISOString().split("T")[0];
+      typeInput.value = "masuk";
+
+      renderAll();
+    }
+
+    function deleteTransaction(id){
+      const confirmDelete = confirm("Yakin mau hapus transaksi ini?");
+      if(!confirmDelete) return;
+      transactions = transactions.filter(item => item.id !== id);
+      saveTransactions();
+      renderAll();
+    }
+
+    function getFilteredTransactions(){
+      let data = [...transactions];
+
+      const dateVal = filterDate.value;
+      const typeVal = filterType.value;
+
+      if(dateVal){
+        data = data.filter(item => item.date === dateVal);
+      }
+
+      if(typeVal !== "all"){
+        data = data.filter(item => item.type === typeVal);
+      }
+
+      return data;
+    }
+
+    function renderStats(){
+      const totalMasuk = transactions
+        .filter(t => t.type === "masuk")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const totalKeluar = transactions
+        .filter(t => t.type === "keluar")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const saldo = totalMasuk - totalKeluar;
+
+      saldoValue.textContent = formatRupiah(saldo);
+      masukValue.textContent = formatRupiah(totalMasuk);
+      keluarValue.textContent = formatRupiah(totalKeluar);
+
+      if(transactions.length === 0){
+        summaryLine.textContent = "Belum ada data transaksi.";
+        return;
+      }
+
+      const today = new Date().toISOString().split("T")[0];
+      const todayData = transactions.filter(t => t.date === today);
+
+      const todayMasuk = todayData
+        .filter(t => t.type === "masuk")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const todayKeluar = todayData
+        .filter(t => t.type === "keluar")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      summaryLine.innerHTML = `
+        Hari ini: <strong>${formatRupiah(todayMasuk)}</strong> masuk •
+        <strong>${formatRupiah(todayKeluar)}</strong> keluar •
+        selisih <strong>${formatRupiah(todayMasuk - todayKeluar)}</strong>
+      `;
+    }
+
+    function renderTable(){
+      const data = getFilteredTransactions();
+      tableBody.innerHTML = "";
+
+      if(data.length === 0){
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      data.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatDate(item.date)}</td>
+          <td>
+            <span class="pill ${item.type}">
+              ${item.type === "masuk" ? "Uang Masuk" : "Uang Keluar"}
+            </span>
+          </td>
+          <td>${item.category}</td>
+          <td>${item.note || "-"}</td>
+          <td class="
