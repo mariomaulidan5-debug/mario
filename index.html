@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DuitKu — Catatan Keuangan Harian</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
+
+<!-- Google Fonts: Poppins -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- SheetJS (Export Excel) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- jsPDF + autotable (Export PDF) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== LOADING SCREEN ===== -->
+<div id="loadingScreen">
+  <div class="loader-content">
+    <div class="loader-coin"><i class="fa-solid fa-coins"></i></div>
+    <p>Memuat DuitKu...</p>
+  </div>
+</div>
+
+<!-- ===== TOAST NOTIFICATION ===== -->
+<div id="toastBox"></div>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-icon"><i class="fa-solid fa-wallet"></i></span>
+      <span class="brand-text">DuitKu</span>
+    </div>
+    <nav class="nav-menu">
+      <button class="nav-item active" data-page="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></button>
+      <button class="nav-item" data-page="tambah"><i class="fa-solid fa-circle-plus"></i><span>Tambah Transaksi</span></button>
+      <button class="nav-item" data-page="riwayat"><i class="fa-solid fa-clock-rotate-left"></i><span>Riwayat</span></button>
+      <button class="nav-item" data-page="statistik"><i class="fa-solid fa-chart-column"></i><span>Statistik</span></button>
+      <button class="nav-item" data-page="kalender"><i class="fa-regular fa-calendar-days"></i><span>Kalender</span></button>
+      <button class="nav-item" data-page="target"><i class="fa-solid fa-bullseye"></i><span>Target Menabung</span></button>
+      <button class="nav-item" data-page="budget"><i class="fa-solid fa-sack-dollar"></i><span>Budget Bulanan</span></button>
+      <button class="nav-item" data-page="pengaturan"><i class="fa-solid fa-gear"></i><span>Pengaturan</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="darkModeBtn" class="dark-toggle">
+        <i class="fa-solid fa-moon"></i><span>Mode Gelap</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MOBILE OVERLAY ===== -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburgerBtn"><i class="fa-solid fa-bars"></i></button>
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="topbar-right">
+        <span id="todayDate"></span>
+      </div>
+    </header>
+
+    <div class="content" id="contentArea">
+
+      <!-- ===================== PAGE: DASHBOARD ===================== -->
+      <section class="page active" id="page-dashboard">
+
+        <div class="stat-grid">
+          <div class="stat-card glass green">
+            <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Saldo</span>
+              <span class="stat-value" id="statSaldo" data-target="0">Rp 0</span>
+            </div>
+          </div>
+          <div class="stat-card glass blue">
+            <div class="stat-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Pemasukan Bulan Ini</span>
+              <span class="stat-value" id="statPemasukan" data-target="0">Rp 0</span>
+            </div>
+          </div>
+          <div class="stat-card glass red">
+            <div class="stat-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Pengeluaran Bulan Ini</span>
+              <span class="stat-value" id="statPengeluaran" data-target="0">Rp 0</span>
+            </div>
+          </div>
+          <div class="stat-card glass gray">
+            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Sisa Uang Bulan Ini</span>
+              <span class="stat-value" id="statSisa" data-target="0">Rp 0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card glass chart-card">
+          <div class="card-head">
+            <h3><i class="fa-solid fa-chart-line"></i> Grafik Pemasukan &amp; Pengeluaran Bulanan</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartBulanan"></canvas>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">
+            <h3><i class="fa-solid fa-list"></i> Transaksi Terbaru</h3>
+            <button class="btn-link" data-goto="riwayat">Lihat Semua <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+          <div id="recentList" class="trx-list"></div>
+        </div>
+
+      </section>
+
+      <!-- ===================== PAGE: TAMBAH TRANSAKSI ===================== -->
+      <section class="page" id="page-tambah">
+        <div class="card glass form-card">
+          <div class="card-head"><h3><i class="fa-solid fa-circle-plus"></i> Tambah Transaksi</h3></div>
+          <form id="trxForm">
+            <input type="hidden" id="editId">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-regular fa-calendar"></i> Tanggal</label>
+                <input type="date" id="inputTanggal" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-right-left"></i> Jenis Transaksi</label>
+                <div class="seg-control" id="jenisSeg">
+                  <button type="button" class="seg-btn active" data-jenis="pemasukan">Pemasukan</button>
+                  <button type="button" class="seg-btn" data-jenis="pengeluaran">Pengeluaran</button>
+                </div>
+                <input type="hidden" id="inputJenis" value="pemasukan">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-solid fa-tags"></i> Kategori</label>
+                <select id="inputKategori" required></select>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-money-bill-wave"></i> Nominal (Rp)</label>
+                <input type="text" id="inputNominal" inputmode="numeric" placeholder="0" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="fa-regular fa-note-sticky"></i> Catatan</label>
+              <textarea id="inputCatatan" rows="3" placeholder="Tulis catatan tambahan (opsional)"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>
+              <button type="reset" class="btn btn-secondary" id="resetFormBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: RIWAYAT ===================== -->
+      <section class="page" id="page-riwayat">
+        <div class="card glass">
+          <div class="card-head"><h3><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Transaksi</h3></div>
+          <div class="filter-bar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchInput" placeholder="Cari catatan / kategori...">
+            </div>
+            <input type="date" id="filterTanggal" title="Filter tanggal">
+            <select id="filterKategori"><option value="">Semua Kategori</option></select>
+            <select id="filterJenis">
+              <option value="">Semua Jenis</option>
+              <option value="pemasukan">Pemasukan</option>
+              <option value="pengeluaran">Pengeluaran</option>
+            </select>
+            <button class="btn btn-ghost" id="clearFilterBtn"><i class="fa-solid fa-xmark"></i> Reset Filter</button>
+          </div>
+          <div class="table-wrap">
+            <table class="trx-table">
+              <thead>
+                <tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Catatan</th><th>Nominal</th><th>Aksi</th></tr>
+              </thead>
+              <tbody id="historyTbody"></tbody>
+            </table>
+          </div>
+          <div id="emptyHistory" class="empty-state" style="display:none;">
+            <i class="fa-regular fa-folder-open"></i>
+            <p>Belum ada transaksi yang cocok.</p>
+          </div>
+          <div class="export-bar">
+            <button class="btn btn-secondary" id="exportExcelBtn"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-secondary" id="exportPdfBtn"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: STATISTIK ===================== -->
+      <section class="page" id="page-statistik">
+        <div class="grid-2">
+          <div class="card glass">
+            <div class="card-head"><h3><i class="fa-solid fa-chart-column"></i> Pemasukan vs Pengeluaran</h3></div>
+            <div class="chart-wrap"><canvas id="chartVs"></canvas></div>
+          </div>
+          <div class="card glass">
+            <div class="card-head"><h3><i class="fa-solid fa-chart-pie"></i> Kategori Pengeluaran</h3></div>
+            <div class="chart-wrap"><canvas id="chartKategoriOut"></canvas></div>
+          </div>
+          <div class="card glass">
+            <div class="card-head"><h3><i class="fa-solid fa-chart-pie"></i> Kategori Pemasukan</h3></div>
+            <div class="chart-wrap"><canvas id="chartKategoriIn"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: KALENDER ===================== -->
+      <section class="page" id="page-kalender">
+        <div class="card glass">
+          <div class="card-head">
+            <h3><i class="fa-regular fa-calendar-days"></i> Kalender Transaksi</h3>
+            <div class="cal-nav">
+              <button id="calPrev" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+              <span id="calLabel"></span>
+              <button id="calNext" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+        <div class="card glass" id="calDetailCard" style="display:none;">
+          <div class="card-head"><h3 id="calDetailTitle"><i class="fa-solid fa-list"></i> Transaksi</h3></div>
+          <div id="calDetailList" class="trx-list"></div>
+        </div>
+      </section>
+
+      <!-- ===================== PAGE: TARGET MENABUNG ===================== -->
+      <section class="page" id="page-target">
+        <div class="card glass form-card">
+          <div class="card-head"><h3><i class="fa-solid fa-bullseye"></i> Buat Target Baru</h3></div>
+          <form id="targetForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-solid fa-flag"></i> Nama Target</label>
+                <input type="text" id="targetNama" placeholder="Contoh: Laptop, Motor, Liburan" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-money-bill-wave"></i> Nominal Target (Rp)</label>
+                <input type="text" id="targetNominal" inputmode="numeric" placeholder="0" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Buat Target</button>
+            </div>
+          </form>
+        </div>
+        <div class="card-grid" id="targetList"></div>
+      </section>
+
+      <!-- ===================== PAGE: BUDGET BULANAN ===================== -->
+      <section class="page" id="page-budget">
+        <div class="card glass form-card">
+          <div class="card-head"><h3><i class="fa-solid fa-sack-dollar"></i> Atur Budget Kategori</h3></div>
+          <form id="budgetForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-solid fa-tags"></i> Kategori Pengeluaran</label>
+                <select id="budgetKategori"></select>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-money-bill-wave"></i> Batas Bulanan (Rp)</label>
+                <input type="text" id="budgetNominal" inputmode="numeric" placeholder="0" required>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Simpan Budget</button>
+            </div>
+          </form>
+        </div>
+        <div class="card-grid" id="budgetList"></div>
+      </section>
+
+      <!-- ===================== PAGE: PENGATURAN ===================== -->
+      <section class="page" id="page-pengaturan">
+        <div class="card glass">
+          <div class="card-head"><h3><i class="fa-solid fa-database"></i> Backup &amp; Restore Data</h3></div>
+          <p class="muted">Semua data tersimpan di Local Storage browser ini. Backup data secara berkala agar tidak hilang.</p>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="backupBtn"><i class="fa-solid fa-download"></i> Backup (JSON)</button>
+            <button class="btn btn-secondary" id="restoreBtnLabel"><i class="fa-solid fa-upload"></i> Restore dari JSON</button>
+            <input type="file" id="restoreInput" accept=".json" style="display:none;">
+            <button class="btn btn-danger" id="clearAllBtn"><i class="fa-solid fa-trash"></i> Hapus Semua Data</button>
+          </div>
+        </div>
+        <div class="card glass">
+          <div class="card-head"><h3><i class="fa-solid fa-circle-info"></i> Tentang</h3></div>
+          <p class="muted">DuitKu — Catatan Keuangan Harian. Dibuat sederhana, elegan, dan mudah dipakai untuk mencatat keuangan harianmu. 100% offline, data hanya tersimpan di perangkatmu.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ===== FLOATING ADD BUTTON ===== -->
+<button class="fab" id="fabAdd"><i class="fa-solid fa-plus"></i></button>
+
+<script src="script.js"></script>
+</body>
+</html>
